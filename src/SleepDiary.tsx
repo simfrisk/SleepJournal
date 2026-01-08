@@ -24,11 +24,22 @@ interface DayData {
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+const ACTIVITY_OPTIONS = [
+  'Reading',
+  'Watching TV',
+  'Using phone/tablet',
+  'Exercise',
+  'Meditation/Relaxation',
+  'Work/Study',
+  'Socializing',
+  'Other'
+]
+
 function SleepDiary() {
   const [bedtime, setBedtime] = useState('')
   const [riseTime, setRiseTime] = useState('')
   const [darkMode, setDarkMode] = useState(false)
-  const [viewMode, setViewMode] = useState<'week' | 'day'>('week')
+  const [viewMode, setViewMode] = useState<'week' | 'day' | 'analytics'>('week')
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
 
   const [weekData, setWeekData] = useState<DayData[]>(
@@ -68,9 +79,12 @@ function SleepDiary() {
 
   const parseDuration = (durStr: string): number => {
     if (!durStr) return 0
-    // Parse formats like "30 min", "1 hour", "1.5 hours", "90 minutes"
     const match = durStr.match(/(\d+\.?\d*)\s*(min|hour|hr)/i)
-    if (!match) return 0
+    if (!match) {
+      // Check if it's just a number (minutes)
+      const num = parseInt(durStr)
+      return isNaN(num) ? 0 : num
+    }
     const value = parseFloat(match[1])
     const unit = match[2].toLowerCase()
     return unit.startsWith('hour') || unit === 'hr' ? value * 60 : value
@@ -95,11 +109,9 @@ function SleepDiary() {
     let totalTimeAwake = 0
 
     validEntries.forEach(day => {
-      // Calculate sleep window (from sleep attempt to out of bed)
       let sleepAttempt = parseTime(day.sleepAttemptTime)
       let outOfBed = parseTime(day.outOfBed)
 
-      // Handle overnight (if out of bed time is earlier than sleep attempt, add 24 hours)
       if (outOfBed < sleepAttempt) {
         outOfBed += 24 * 60
       }
@@ -107,7 +119,6 @@ function SleepDiary() {
       const sleepWindow = outOfBed - sleepAttempt
       totalSleepWindow += sleepWindow
 
-      // Calculate time awake (time to fall asleep + awakening duration)
       const timeToSleep = parseDuration(day.timeToFallAsleep)
       const awakenings = parseDuration(day.awakeningDuration)
       totalTimeAwake += timeToSleep + awakenings
@@ -126,20 +137,110 @@ function SleepDiary() {
     }
   }
 
+  const getDayCompletion = (day: DayData): number => {
+    const fields = [
+      day.date, day.bedTime, day.sleepAttemptTime, day.timeToFallAsleep,
+      day.nightAwakenings, day.outOfBed, day.sleepQuality, day.stressLevel
+    ]
+    const completed = fields.filter(f => f !== '').length
+    return Math.round((completed / fields.length) * 100)
+  }
+
+  const getSleepQualityEmoji = (quality: string): string => {
+    switch (quality) {
+      case 'Very poor': return '😴'
+      case 'Poor': return '😞'
+      case 'Fair': return '😐'
+      case 'Good': return '🙂'
+      case 'Very good': return '😊'
+      default: return '⚪'
+    }
+  }
+
+  const getSleepQualityScore = (quality: string): number => {
+    switch (quality) {
+      case 'Very poor': return 1
+      case 'Poor': return 2
+      case 'Fair': return 3
+      case 'Good': return 4
+      case 'Very good': return 5
+      default: return 0
+    }
+  }
+
+  const calculateAnalytics = () => {
+    const validDays = weekData.filter(day => day.sleepQuality !== '')
+
+    if (validDays.length === 0) {
+      return {
+        sweetCorrelation: null,
+        caffeineCorrelation: null,
+        screenCorrelation: null,
+        stressCorrelation: null,
+        totalDays: 0
+      }
+    }
+
+    // Calculate average sleep quality with and without each factor
+    const withSweets = validDays.filter(d => d.sweetIntake === 'Yes')
+    const withoutSweets = validDays.filter(d => d.sweetIntake === 'No')
+
+    const withCaffeine = validDays.filter(d => d.caffeineIntake === 'Yes')
+    const withoutCaffeine = validDays.filter(d => d.caffeineIntake === 'No')
+
+    const withScreen = validDays.filter(d => d.screenUse === 'Yes')
+    const withoutScreen = validDays.filter(d => d.screenUse === 'No')
+
+    const highStress = validDays.filter(d => d.stressLevel === 'High' || d.stressLevel === 'Very high')
+    const lowStress = validDays.filter(d => d.stressLevel === 'Low' || d.stressLevel === 'Very low' || d.stressLevel === 'Moderate')
+
+    const avgQuality = (days: DayData[]) => {
+      if (days.length === 0) return 0
+      const sum = days.reduce((acc, day) => acc + getSleepQualityScore(day.sleepQuality), 0)
+      return sum / days.length
+    }
+
+    return {
+      sweetCorrelation: {
+        with: avgQuality(withSweets),
+        without: avgQuality(withoutSweets),
+        count: withSweets.length
+      },
+      caffeineCorrelation: {
+        with: avgQuality(withCaffeine),
+        without: avgQuality(withoutCaffeine),
+        count: withCaffeine.length
+      },
+      screenCorrelation: {
+        with: avgQuality(withScreen),
+        without: avgQuality(withoutScreen),
+        count: withScreen.length
+      },
+      stressCorrelation: {
+        high: avgQuality(highStress),
+        low: avgQuality(lowStress),
+        countHigh: highStress.length
+      },
+      totalDays: validDays.length
+    }
+  }
+
   const metrics = calculateSleepMetrics()
+  const analytics = calculateAnalytics()
 
   return (
     <div className={`sleep-diary ${darkMode ? 'dark-mode' : ''}`}>
       <button className="dark-mode-toggle" onClick={() => setDarkMode(!darkMode)}>
         {darkMode ? '☀️' : '🌙'}
       </button>
+
       <div className="header">
         <div className="title-section">
           <h1 className="title">Sleep Diary</h1>
-          <p className="subtitle">Exact times are not necessary. Estimates are all you need.</p>
+          <p className="subtitle">Track your sleep patterns and discover what affects your rest</p>
         </div>
         <div className="sleep-schedule">
-          <div className="schedule-label">SLEEP SCHEDULE</div>
+          <div className="schedule-label">TARGET SCHEDULE</div>
           <div className="schedule-inputs">
             <div className="schedule-field">
               <label>Bedtime:</label>
@@ -166,356 +267,93 @@ function SleepDiary() {
           className={`view-btn ${viewMode === 'week' ? 'active' : ''}`}
           onClick={() => setViewMode('week')}
         >
-          Week View
+          Week Overview
         </button>
         <button
           className={`view-btn ${viewMode === 'day' ? 'active' : ''}`}
           onClick={() => setViewMode('day')}
         >
-          Day View
+          Daily Entry
+        </button>
+        <button
+          className={`view-btn ${viewMode === 'analytics' ? 'active' : ''}`}
+          onClick={() => setViewMode('analytics')}
+        >
+          Analytics
         </button>
       </div>
 
-      {viewMode === 'week' ? (
-        <div className="table-container">
-        <table className="sleep-table">
-          <thead>
-            <tr>
-              <th className="question-col">DAY OF THE WEEK</th>
-              {DAYS.map(day => (
-                <th key={day}>{day}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="question-col">DATE</td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="date"
-                    value={day.date}
-                    onChange={(e) => updateDayData(index, 'date', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
+      {viewMode === 'week' && (
+        <div className="week-overview">
+          <div className="week-grid">
+            {weekData.map((day, index) => {
+              const completion = getDayCompletion(day)
+              const emoji = getSleepQualityEmoji(day.sleepQuality)
 
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q1</span>
-                <span className="q-text">What time did you get into bed?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="time"
-                    value={day.bedTime}
-                    onChange={(e) => updateDayData(index, 'bedTime', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q2</span>
-                <span className="q-text">What time did you try to go to sleep?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="time"
-                    value={day.sleepAttemptTime}
-                    onChange={(e) => updateDayData(index, 'sleepAttemptTime', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q3</span>
-                <span className="q-text">How long did it take you to fall asleep?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="text"
-                    placeholder="e.g. 30 min"
-                    value={day.timeToFallAsleep}
-                    onChange={(e) => updateDayData(index, 'timeToFallAsleep', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q4</span>
-                <span className="q-text">How many times did you wake up, not counting your final awakening?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="number"
-                    min="0"
-                    value={day.nightAwakenings}
-                    onChange={(e) => updateDayData(index, 'nightAwakenings', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q5</span>
-                <span className="q-text">In total, how long did these awakenings last?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="text"
-                    placeholder="e.g. 1 hour"
-                    value={day.awakeningDuration}
-                    onChange={(e) => updateDayData(index, 'awakeningDuration', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q6</span>
-                <span className="q-text">What time was your final awakening?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="time"
-                    value={day.finalAwakening}
-                    onChange={(e) => updateDayData(index, 'finalAwakening', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q7</span>
-                <span className="q-text">What time did you get out of bed for the day?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="time"
-                    value={day.outOfBed}
-                    onChange={(e) => updateDayData(index, 'outOfBed', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q8</span>
-                <span className="q-text">Did you consume sweets or sugary foods/drinks within 3 hours of bedtime?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <select
-                    value={day.sweetIntake}
-                    onChange={(e) => updateDayData(index, 'sweetIntake', e.target.value)}
-                  >
-                    <option value="">Select</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q9</span>
-                <span className="q-text">If yes, what time did you consume sweets?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="time"
-                    value={day.sweetTime}
-                    onChange={(e) => updateDayData(index, 'sweetTime', e.target.value)}
-                    disabled={day.sweetIntake !== 'Yes'}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q10</span>
-                <span className="q-text">Did you consume caffeine (coffee, tea, energy drinks, etc.)?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <select
-                    value={day.caffeineIntake}
-                    onChange={(e) => updateDayData(index, 'caffeineIntake', e.target.value)}
-                  >
-                    <option value="">Select</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q11</span>
-                <span className="q-text">If yes, what was the last time you consumed caffeine?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="time"
-                    value={day.caffeineTime}
-                    onChange={(e) => updateDayData(index, 'caffeineTime', e.target.value)}
-                    disabled={day.caffeineIntake !== 'Yes'}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q12</span>
-                <span className="q-text">Did you use electronic screens (computer, phone, TV, tablet) in the 2 hours before bed?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <select
-                    value={day.screenUse}
-                    onChange={(e) => updateDayData(index, 'screenUse', e.target.value)}
-                  >
-                    <option value="">Select</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q13</span>
-                <span className="q-text">What was your primary activity in the hour before attempting to sleep?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <input
-                    type="text"
-                    placeholder="e.g. reading, watching TV"
-                    value={day.lastHourActivity}
-                    onChange={(e) => updateDayData(index, 'lastHourActivity', e.target.value)}
-                  />
-                </td>
-              ))}
-            </tr>
-
-            <tr className="quality-row">
-              <td className="question-col">
-                <span className="q-number">Q14</span>
-                <span className="q-text">How would you rate your overall stress level today?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <div className="radio-group">
-                    {['Very low', 'Low', 'Moderate', 'High', 'Very high'].map(stress => (
-                      <label key={stress} className="radio-label">
-                        <input
-                          type="radio"
-                          name={`stress-${index}`}
-                          value={stress}
-                          checked={day.stressLevel === stress}
-                          onChange={(e) => updateDayData(index, 'stressLevel', e.target.value)}
-                        />
-                        {stress}
-                      </label>
-                    ))}
+              return (
+                <div
+                  key={index}
+                  className="day-card"
+                  onClick={() => {
+                    setSelectedDayIndex(index)
+                    setViewMode('day')
+                  }}
+                >
+                  <div className="day-card-header">
+                    <span className="day-name">{day.dayOfWeek}</span>
+                    <span className="sleep-emoji">{emoji}</span>
                   </div>
-                </td>
-              ))}
-            </tr>
 
-            <tr className="quality-row">
-              <td className="question-col">
-                <span className="q-number">Q15</span>
-                <span className="q-text">How would you rate the quality of your sleep?</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <div className="radio-group">
-                    {['Very poor', 'Poor', 'Fair', 'Good', 'Very good'].map(quality => (
-                      <label key={quality} className="radio-label">
-                        <input
-                          type="radio"
-                          name={`quality-${index}`}
-                          value={quality}
-                          checked={day.sleepQuality === quality}
-                          onChange={(e) => updateDayData(index, 'sleepQuality', e.target.value)}
-                        />
-                        {quality}
-                      </label>
-                    ))}
+                  {day.date && (
+                    <div className="day-date">{new Date(day.date).getDate()}</div>
+                  )}
+
+                  <div className="completion-bar">
+                    <div
+                      className="completion-fill"
+                      style={{ width: `${completion}%` }}
+                    />
                   </div>
-                </td>
-              ))}
-            </tr>
 
-            <tr>
-              <td className="question-col">
-                <span className="q-number">Q16</span>
-                <span className="q-text">Note anything that interfered with your sleep.</span>
-              </td>
-              {weekData.map((day, index) => (
-                <td key={index}>
-                  <textarea
-                    value={day.notes}
-                    onChange={(e) => updateDayData(index, 'notes', e.target.value)}
-                    rows={3}
-                  />
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      ) : (
+                  <div className="day-stats">
+                    {day.outOfBed && (
+                      <span className="stat">🛏️ {day.outOfBed}</span>
+                    )}
+                    {day.stressLevel && (
+                      <span className="stat-stress">
+                        {day.stressLevel === 'Very high' || day.stressLevel === 'High' ? '⚠️' : '✓'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'day' && (
         <div className="day-view">
           <div className="day-navigation">
             <button
               className="nav-btn"
               onClick={() => setSelectedDayIndex((selectedDayIndex - 1 + 7) % 7)}
             >
-              ← Previous Day
+              ← Previous
             </button>
             <h2 className="current-day">{DAYS[selectedDayIndex]}</h2>
             <button
               className="nav-btn"
               onClick={() => setSelectedDayIndex((selectedDayIndex + 1) % 7)}
             >
-              Next Day →
+              Next →
             </button>
           </div>
 
           <div className="day-form">
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q1</span>
-                <span className="q-text">Date</span>
-              </label>
+            {/* Date */}
+            <div className="form-section">
+              <h3 className="section-title">📅 Date</h3>
               <input
                 type="date"
                 value={weekData[selectedDayIndex].date}
@@ -524,245 +362,473 @@ function SleepDiary() {
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q1</span>
-                <span className="q-text">What time did you get into bed?</span>
-              </label>
-              <input
-                type="time"
-                value={weekData[selectedDayIndex].bedTime}
-                onChange={(e) => updateDayData(selectedDayIndex, 'bedTime', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q2</span>
-                <span className="q-text">What time did you try to go to sleep?</span>
-              </label>
-              <input
-                type="time"
-                value={weekData[selectedDayIndex].sleepAttemptTime}
-                onChange={(e) => updateDayData(selectedDayIndex, 'sleepAttemptTime', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q3</span>
-                <span className="q-text">How long did it take you to fall asleep?</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 30 min"
-                value={weekData[selectedDayIndex].timeToFallAsleep}
-                onChange={(e) => updateDayData(selectedDayIndex, 'timeToFallAsleep', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q4</span>
-                <span className="q-text">How many times did you wake up, not counting your final awakening?</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={weekData[selectedDayIndex].nightAwakenings}
-                onChange={(e) => updateDayData(selectedDayIndex, 'nightAwakenings', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q5</span>
-                <span className="q-text">In total, how long did these awakenings last?</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 1 hour"
-                value={weekData[selectedDayIndex].awakeningDuration}
-                onChange={(e) => updateDayData(selectedDayIndex, 'awakeningDuration', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q6</span>
-                <span className="q-text">What time was your final awakening?</span>
-              </label>
-              <input
-                type="time"
-                value={weekData[selectedDayIndex].finalAwakening}
-                onChange={(e) => updateDayData(selectedDayIndex, 'finalAwakening', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q7</span>
-                <span className="q-text">What time did you get out of bed for the day?</span>
-              </label>
-              <input
-                type="time"
-                value={weekData[selectedDayIndex].outOfBed}
-                onChange={(e) => updateDayData(selectedDayIndex, 'outOfBed', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q8</span>
-                <span className="q-text">Did you consume sweets or sugary foods/drinks within 3 hours of bedtime?</span>
-              </label>
-              <select
-                value={weekData[selectedDayIndex].sweetIntake}
-                onChange={(e) => updateDayData(selectedDayIndex, 'sweetIntake', e.target.value)}
-                className="form-input"
-              >
-                <option value="">Select</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q9</span>
-                <span className="q-text">If yes, what time did you consume sweets?</span>
-              </label>
-              <input
-                type="time"
-                value={weekData[selectedDayIndex].sweetTime}
-                onChange={(e) => updateDayData(selectedDayIndex, 'sweetTime', e.target.value)}
-                disabled={weekData[selectedDayIndex].sweetIntake !== 'Yes'}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q10</span>
-                <span className="q-text">Did you consume caffeine (coffee, tea, energy drinks, etc.)?</span>
-              </label>
-              <select
-                value={weekData[selectedDayIndex].caffeineIntake}
-                onChange={(e) => updateDayData(selectedDayIndex, 'caffeineIntake', e.target.value)}
-                className="form-input"
-              >
-                <option value="">Select</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q11</span>
-                <span className="q-text">If yes, what was the last time you consumed caffeine?</span>
-              </label>
-              <input
-                type="time"
-                value={weekData[selectedDayIndex].caffeineTime}
-                onChange={(e) => updateDayData(selectedDayIndex, 'caffeineTime', e.target.value)}
-                disabled={weekData[selectedDayIndex].caffeineIntake !== 'Yes'}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q12</span>
-                <span className="q-text">Did you use electronic screens (computer, phone, TV, tablet) in the 2 hours before bed?</span>
-              </label>
-              <select
-                value={weekData[selectedDayIndex].screenUse}
-                onChange={(e) => updateDayData(selectedDayIndex, 'screenUse', e.target.value)}
-                className="form-input"
-              >
-                <option value="">Select</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q13</span>
-                <span className="q-text">What was your primary activity in the hour before attempting to sleep?</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. reading, watching TV"
-                value={weekData[selectedDayIndex].lastHourActivity}
-                onChange={(e) => updateDayData(selectedDayIndex, 'lastHourActivity', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q14</span>
-                <span className="q-text">How would you rate your overall stress level today?</span>
-              </label>
-              <div className="radio-group">
-                {['Very low', 'Low', 'Moderate', 'High', 'Very high'].map(stress => (
-                  <label key={stress} className="radio-label">
-                    <input
-                      type="radio"
-                      name="stress-level"
-                      value={stress}
-                      checked={weekData[selectedDayIndex].stressLevel === stress}
-                      onChange={(e) => updateDayData(selectedDayIndex, 'stressLevel', e.target.value)}
-                    />
-                    {stress}
+            {/* Sleep Times */}
+            <div className="form-section">
+              <h3 className="section-title">🛏️ Sleep Times</h3>
+              <div className="input-grid-2">
+                <div className="input-group">
+                  <label>
+                    In bed at
+                    <span className="help-text">When you got into bed</span>
                   </label>
-                ))}
+                  <input
+                    type="time"
+                    value={weekData[selectedDayIndex].bedTime}
+                    onChange={(e) => updateDayData(selectedDayIndex, 'bedTime', e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div className="input-group">
+                  <label>
+                    Lights out at
+                    <span className="help-text">When you tried to fall asleep</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={weekData[selectedDayIndex].sleepAttemptTime}
+                    onChange={(e) => updateDayData(selectedDayIndex, 'sleepAttemptTime', e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+              <div className="input-grid-2">
+                <div className="input-group">
+                  <label>
+                    Woke up at
+                    <span className="help-text">Final wake time in the morning</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={weekData[selectedDayIndex].finalAwakening}
+                    onChange={(e) => updateDayData(selectedDayIndex, 'finalAwakening', e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div className="input-group">
+                  <label>
+                    Out of bed at
+                    <span className="help-text">When you actually got up</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={weekData[selectedDayIndex].outOfBed}
+                    onChange={(e) => updateDayData(selectedDayIndex, 'outOfBed', e.target.value)}
+                    className="form-input"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q15</span>
-                <span className="q-text">How would you rate the quality of your sleep?</span>
-              </label>
-              <div className="radio-group">
-                {['Very poor', 'Poor', 'Fair', 'Good', 'Very good'].map(quality => (
-                  <label key={quality} className="radio-label">
-                    <input
-                      type="radio"
-                      name="sleep-quality"
-                      value={quality}
-                      checked={weekData[selectedDayIndex].sleepQuality === quality}
-                      onChange={(e) => updateDayData(selectedDayIndex, 'sleepQuality', e.target.value)}
-                    />
-                    {quality}
-                  </label>
-                ))}
+            {/* Sleep Disruptions */}
+            <div className="form-section">
+              <h3 className="section-title">😴 Sleep Disruptions</h3>
+              <div className="input-group">
+                <label>Time to fall asleep</label>
+                <div className="button-group">
+                  {['5 min', '15 min', '30 min', '45 min', '60+ min'].map(time => (
+                    <button
+                      key={time}
+                      className={`choice-btn ${weekData[selectedDayIndex].timeToFallAsleep === time ? 'active' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'timeToFallAsleep', time)}
+                    >
+                      {time}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="input-grid">
+                <div className="input-group">
+                  <label>Night awakenings</label>
+                  <select
+                    value={weekData[selectedDayIndex].nightAwakenings}
+                    onChange={(e) => updateDayData(selectedDayIndex, 'nightAwakenings', e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="">Select</option>
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4+">4+</option>
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Total time awake</label>
+                  <select
+                    value={weekData[selectedDayIndex].awakeningDuration}
+                    onChange={(e) => updateDayData(selectedDayIndex, 'awakeningDuration', e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="">Select</option>
+                    <option value="15 min">15 min</option>
+                    <option value="30 min">30 min</option>
+                    <option value="1 hour">1 hour</option>
+                    <option value="2 hours">2+ hours</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">
-                <span className="q-number">Q16</span>
-                <span className="q-text">Note anything that interfered with your sleep.</span>
-              </label>
-              <textarea
-                value={weekData[selectedDayIndex].notes}
-                onChange={(e) => updateDayData(selectedDayIndex, 'notes', e.target.value)}
-                rows={5}
-                className="form-input"
-              />
+            {/* Lifestyle Factors */}
+            <div className="form-section">
+              <h3 className="section-title">🍽️ Lifestyle Factors</h3>
+              <div className="toggle-grid">
+                <div className="toggle-item">
+                  <label>Sweets/Sugar (3hrs before bed)</label>
+                  <div className="toggle-buttons">
+                    <button
+                      className={`toggle-btn ${weekData[selectedDayIndex].sweetIntake === 'Yes' ? 'active yes' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'sweetIntake', 'Yes')}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className={`toggle-btn ${weekData[selectedDayIndex].sweetIntake === 'No' ? 'active no' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'sweetIntake', 'No')}
+                    >
+                      No
+                    </button>
+                  </div>
+                  {weekData[selectedDayIndex].sweetIntake === 'Yes' && (
+                    <input
+                      type="time"
+                      value={weekData[selectedDayIndex].sweetTime}
+                      onChange={(e) => updateDayData(selectedDayIndex, 'sweetTime', e.target.value)}
+                      className="form-input mt-2"
+                      placeholder="What time?"
+                    />
+                  )}
+                </div>
+
+                <div className="toggle-item">
+                  <label>Caffeine</label>
+                  <div className="toggle-buttons">
+                    <button
+                      className={`toggle-btn ${weekData[selectedDayIndex].caffeineIntake === 'Yes' ? 'active yes' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'caffeineIntake', 'Yes')}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className={`toggle-btn ${weekData[selectedDayIndex].caffeineIntake === 'No' ? 'active no' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'caffeineIntake', 'No')}
+                    >
+                      No
+                    </button>
+                  </div>
+                  {weekData[selectedDayIndex].caffeineIntake === 'Yes' && (
+                    <input
+                      type="time"
+                      value={weekData[selectedDayIndex].caffeineTime}
+                      onChange={(e) => updateDayData(selectedDayIndex, 'caffeineTime', e.target.value)}
+                      className="form-input mt-2"
+                      placeholder="Last consumption"
+                    />
+                  )}
+                </div>
+
+                <div className="toggle-item">
+                  <label>Screen time (2hrs before bed)</label>
+                  <div className="toggle-buttons">
+                    <button
+                      className={`toggle-btn ${weekData[selectedDayIndex].screenUse === 'Yes' ? 'active yes' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'screenUse', 'Yes')}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className={`toggle-btn ${weekData[selectedDayIndex].screenUse === 'No' ? 'active no' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'screenUse', 'No')}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label>Last hour activity before sleep</label>
+                <div className="button-group-wrap">
+                  {ACTIVITY_OPTIONS.map(activity => (
+                    <button
+                      key={activity}
+                      className={`choice-btn ${weekData[selectedDayIndex].lastHourActivity === activity ? 'active' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'lastHourActivity', activity)}
+                    >
+                      {activity}
+                    </button>
+                  ))}
+                </div>
+                {weekData[selectedDayIndex].lastHourActivity === 'Other' && (
+                  <input
+                    type="text"
+                    className="form-input mt-2"
+                    placeholder="Specify activity..."
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Quality & Mood */}
+            <div className="form-section">
+              <h3 className="section-title">💭 How Was It?</h3>
+              <div className="input-group">
+                <label>Stress Level</label>
+                <div className="emoji-scale">
+                  {[
+                    { value: 'Very low', emoji: '😌', label: 'Very Low' },
+                    { value: 'Low', emoji: '🙂', label: 'Low' },
+                    { value: 'Moderate', emoji: '😐', label: 'Moderate' },
+                    { value: 'High', emoji: '😰', label: 'High' },
+                    { value: 'Very high', emoji: '😫', label: 'Very High' }
+                  ].map(({ value, emoji, label }) => (
+                    <button
+                      key={value}
+                      className={`emoji-btn ${weekData[selectedDayIndex].stressLevel === value ? 'active' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'stressLevel', value)}
+                      title={label}
+                    >
+                      <span className="emoji">{emoji}</span>
+                      <span className="emoji-label">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label>Sleep Quality</label>
+                <div className="emoji-scale">
+                  {[
+                    { value: 'Very poor', emoji: '😴', label: 'Very Poor' },
+                    { value: 'Poor', emoji: '😞', label: 'Poor' },
+                    { value: 'Fair', emoji: '😐', label: 'Fair' },
+                    { value: 'Good', emoji: '🙂', label: 'Good' },
+                    { value: 'Very good', emoji: '😊', label: 'Very Good' }
+                  ].map(({ value, emoji, label }) => (
+                    <button
+                      key={value}
+                      className={`emoji-btn ${weekData[selectedDayIndex].sleepQuality === value ? 'active' : ''}`}
+                      onClick={() => updateDayData(selectedDayIndex, 'sleepQuality', value)}
+                      title={label}
+                    >
+                      <span className="emoji">{emoji}</span>
+                      <span className="emoji-label">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label>Notes (optional)</label>
+                <textarea
+                  value={weekData[selectedDayIndex].notes}
+                  onChange={(e) => updateDayData(selectedDayIndex, 'notes', e.target.value)}
+                  rows={3}
+                  className="form-input"
+                  placeholder="Anything that affected your sleep..."
+                />
+              </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {viewMode === 'analytics' && (
+        <div className="analytics-view">
+          <h2 className="analytics-title">Sleep Insights</h2>
+          <p className="analytics-subtitle">
+            {analytics.totalDays > 0
+              ? `Based on ${analytics.totalDays} days of data`
+              : 'Start tracking to see insights'}
+          </p>
+
+          {analytics.totalDays > 0 ? (
+            <div className="insights-grid">
+              {/* Sweet Intake */}
+              {analytics.sweetCorrelation && analytics.sweetCorrelation.count > 0 && (
+                <div className="insight-card">
+                  <div className="insight-header">
+                    <span className="insight-icon">🍬</span>
+                    <h3>Sweet Intake Impact</h3>
+                  </div>
+                  <div className="insight-comparison">
+                    <div className="comparison-item">
+                      <span className="comparison-label">With sweets</span>
+                      <div className="comparison-bar-container">
+                        <div
+                          className="comparison-bar"
+                          style={{
+                            width: `${(analytics.sweetCorrelation.with / 5) * 100}%`,
+                            backgroundColor: analytics.sweetCorrelation.with < analytics.sweetCorrelation.without ? '#ef4444' : '#10b981'
+                          }}
+                        />
+                        <span className="comparison-value">{analytics.sweetCorrelation.with.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                    <div className="comparison-item">
+                      <span className="comparison-label">Without sweets</span>
+                      <div className="comparison-bar-container">
+                        <div
+                          className="comparison-bar"
+                          style={{
+                            width: `${(analytics.sweetCorrelation.without / 5) * 100}%`,
+                            backgroundColor: analytics.sweetCorrelation.without > analytics.sweetCorrelation.with ? '#10b981' : '#94a3b8'
+                          }}
+                        />
+                        <span className="comparison-value">{analytics.sweetCorrelation.without.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="insight-conclusion">
+                    {analytics.sweetCorrelation.with < analytics.sweetCorrelation.without
+                      ? '⚠️ Sweets before bed may reduce sleep quality'
+                      : analytics.sweetCorrelation.with > analytics.sweetCorrelation.without
+                      ? '✓ No negative impact detected'
+                      : '○ No clear pattern yet'}
+                  </p>
+                </div>
+              )}
+
+              {/* Caffeine */}
+              {analytics.caffeineCorrelation && analytics.caffeineCorrelation.count > 0 && (
+                <div className="insight-card">
+                  <div className="insight-header">
+                    <span className="insight-icon">☕</span>
+                    <h3>Caffeine Impact</h3>
+                  </div>
+                  <div className="insight-comparison">
+                    <div className="comparison-item">
+                      <span className="comparison-label">With caffeine</span>
+                      <div className="comparison-bar-container">
+                        <div
+                          className="comparison-bar"
+                          style={{
+                            width: `${(analytics.caffeineCorrelation.with / 5) * 100}%`,
+                            backgroundColor: analytics.caffeineCorrelation.with < analytics.caffeineCorrelation.without ? '#ef4444' : '#10b981'
+                          }}
+                        />
+                        <span className="comparison-value">{analytics.caffeineCorrelation.with.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                    <div className="comparison-item">
+                      <span className="comparison-label">Without caffeine</span>
+                      <div className="comparison-bar-container">
+                        <div
+                          className="comparison-bar"
+                          style={{
+                            width: `${(analytics.caffeineCorrelation.without / 5) * 100}%`,
+                            backgroundColor: analytics.caffeineCorrelation.without > analytics.caffeineCorrelation.with ? '#10b981' : '#94a3b8'
+                          }}
+                        />
+                        <span className="comparison-value">{analytics.caffeineCorrelation.without.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="insight-conclusion">
+                    {analytics.caffeineCorrelation.with < analytics.caffeineCorrelation.without
+                      ? '⚠️ Caffeine may be affecting your sleep'
+                      : analytics.caffeineCorrelation.with > analytics.caffeineCorrelation.without
+                      ? '✓ No negative impact detected'
+                      : '○ No clear pattern yet'}
+                  </p>
+                </div>
+              )}
+
+              {/* Screen Time */}
+              {analytics.screenCorrelation && analytics.screenCorrelation.count > 0 && (
+                <div className="insight-card">
+                  <div className="insight-header">
+                    <span className="insight-icon">📱</span>
+                    <h3>Screen Time Impact</h3>
+                  </div>
+                  <div className="insight-comparison">
+                    <div className="comparison-item">
+                      <span className="comparison-label">With screens</span>
+                      <div className="comparison-bar-container">
+                        <div
+                          className="comparison-bar"
+                          style={{
+                            width: `${(analytics.screenCorrelation.with / 5) * 100}%`,
+                            backgroundColor: analytics.screenCorrelation.with < analytics.screenCorrelation.without ? '#ef4444' : '#10b981'
+                          }}
+                        />
+                        <span className="comparison-value">{analytics.screenCorrelation.with.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                    <div className="comparison-item">
+                      <span className="comparison-label">Without screens</span>
+                      <div className="comparison-bar-container">
+                        <div
+                          className="comparison-bar"
+                          style={{
+                            width: `${(analytics.screenCorrelation.without / 5) * 100}%`,
+                            backgroundColor: analytics.screenCorrelation.without > analytics.screenCorrelation.with ? '#10b981' : '#94a3b8'
+                          }}
+                        />
+                        <span className="comparison-value">{analytics.screenCorrelation.without.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="insight-conclusion">
+                    {analytics.screenCorrelation.with < analytics.screenCorrelation.without
+                      ? '⚠️ Screen time before bed may reduce sleep quality'
+                      : analytics.screenCorrelation.with > analytics.screenCorrelation.without
+                      ? '✓ No negative impact detected'
+                      : '○ No clear pattern yet'}
+                  </p>
+                </div>
+              )}
+
+              {/* Stress */}
+              {analytics.stressCorrelation && analytics.stressCorrelation.countHigh > 0 && (
+                <div className="insight-card">
+                  <div className="insight-header">
+                    <span className="insight-icon">😰</span>
+                    <h3>Stress Impact</h3>
+                  </div>
+                  <div className="insight-comparison">
+                    <div className="comparison-item">
+                      <span className="comparison-label">High stress days</span>
+                      <div className="comparison-bar-container">
+                        <div
+                          className="comparison-bar"
+                          style={{
+                            width: `${(analytics.stressCorrelation.high / 5) * 100}%`,
+                            backgroundColor: '#ef4444'
+                          }}
+                        />
+                        <span className="comparison-value">{analytics.stressCorrelation.high.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                    <div className="comparison-item">
+                      <span className="comparison-label">Low stress days</span>
+                      <div className="comparison-bar-container">
+                        <div
+                          className="comparison-bar"
+                          style={{
+                            width: `${(analytics.stressCorrelation.low / 5) * 100}%`,
+                            backgroundColor: '#10b981'
+                          }}
+                        />
+                        <span className="comparison-value">{analytics.stressCorrelation.low.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="insight-conclusion">
+                    {analytics.stressCorrelation.high < analytics.stressCorrelation.low
+                      ? '⚠️ Stress is significantly affecting your sleep'
+                      : '✓ Stress has minimal impact on sleep quality'}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <span className="empty-icon">📊</span>
+              <p>Track at least one full day to see insights</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -770,44 +836,49 @@ function SleepDiary() {
         <div className="calculations-box">
           <div className="calc-icon">📊</div>
           <div className="calc-content">
-            <h3>End-of-week calculations</h3>
-            <p>Easy calculations at <a href="https://mysleepwell.ca/calculator" target="_blank" rel="noopener noreferrer">mysleepwell.ca/calculator</a></p>
+            <h3>Weekly Analysis</h3>
+            <p>Calculations based on completed days</p>
           </div>
         </div>
 
         <div className="sleep-numbers">
-          <h3>SLEEP NUMBERS</h3>
+          <h3>SLEEP METRICS</h3>
         </div>
 
-        <div className="metrics">
+        <div className="metrics-grid">
           <div className="metric">
             <span className="metric-number">1</span>
-            <span className="metric-label">Sleep window:</span>
-            <span className="metric-value">{metrics.sleepWindow}</span>
+            <div className="metric-info">
+              <span className="metric-label">Sleep window</span>
+              <span className="metric-value">{metrics.sleepWindow}</span>
+            </div>
           </div>
           <div className="metric">
             <span className="metric-number">2</span>
-            <span className="metric-label">Time awake:</span>
-            <span className="metric-value">{metrics.timeAwake}</span>
+            <div className="metric-info">
+              <span className="metric-label">Time awake</span>
+              <span className="metric-value">{metrics.timeAwake}</span>
+            </div>
           </div>
-        </div>
-
-        <div className="metrics">
           <div className="metric">
             <span className="metric-number">3</span>
-            <span className="metric-label">Time asleep:</span>
-            <span className="metric-value">{metrics.timeAsleep}</span>
+            <div className="metric-info">
+              <span className="metric-label">Time asleep</span>
+              <span className="metric-value">{metrics.timeAsleep}</span>
+            </div>
           </div>
           <div className="metric">
             <span className="metric-number">4</span>
-            <span className="metric-label">Sleep efficiency:</span>
-            <span className="metric-value">{metrics.efficiency}%</span>
+            <div className="metric-info">
+              <span className="metric-label">Efficiency</span>
+              <span className="metric-value">{metrics.efficiency}%</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="copyright">
-        © 2018 D. Gardner, A. Murphy - Update: Dec 2024
+        © 2024 Sleep Diary - Track, analyze, and improve your sleep
       </div>
     </div>
   )
