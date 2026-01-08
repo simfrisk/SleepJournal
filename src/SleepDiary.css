@@ -1,0 +1,663 @@
+.sleep-diary {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark-mode-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: transparent;
+  border: 2px solid #2b7eb9;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.dark-mode-toggle:hover {
+  background-color: #2b7eb9;
+  transform: scale(1.1);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  gap: 40px;
+}
+
+.title-section {
+  flex: 1;
+}
+
+.title {
+  font-size: 48px;
+  font-weight: 700;
+  color: #4a3f5c;
+  margin: 0 0 10px 0;
+  line-height: 1.2;
+}
+
+.subtitle {
+  color: #2b7eb9;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.sleep-schedule {
+  border: 3px solid #2b7eb9;
+  border-radius: 8px;
+  padding: 15px;
+  min-width: 350px;
+}
+
+.schedule-label {
+  color: #2b7eb9;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.schedule-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.schedule-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.schedule-field label {
+  font-weight: 600;
+  color: #333;
+  min-width: 90px;
+}
+
+.schedule-field input[type="time"] {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 30px;
+}
+
+.sleep-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 3px solid #333;
+}
+
+.sleep-table th,
+.sleep-table td {
+  border: 2px solid #333;
+  padding: 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.sleep-table thead th {
+  background-color: white;
+  color: #2b7eb9;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.question-col {
+  background-color: white;
+  text-align: left !important;
+  min-width: 220px;
+  padding: 15px !important;
+}
+
+.q-number {
+  display: inline-block;
+  color: #2b7eb9;
+  font-weight: 700;
+  font-size: 24px;
+  margin-right: 10px;
+  min-width: 40px;
+}
+
+.q-text {
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sleep-table input[type="date"],
+.sleep-table input[type="time"],
+.sleep-table input[type="text"],
+.sleep-table input[type="number"] {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.sleep-table textarea {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.quality-row td {
+  padding: 15px 10px !important;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #333;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  width: auto;
+  cursor: pointer;
+}
+
+.footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 20px;
+  align-items: center;
+  padding: 20px;
+  border: 3px solid #333;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.calculations-box {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 2px solid #2b7eb9;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.calc-icon {
+  font-size: 32px;
+}
+
+.calc-content h3 {
+  color: #2b7eb9;
+  font-size: 16px;
+  margin: 0 0 5px 0;
+}
+
+.calc-content p {
+  font-size: 12px;
+  margin: 0;
+  color: #333;
+}
+
+.calc-content a {
+  color: #2b7eb9;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sleep-numbers {
+  background-color: #2b7eb9;
+  color: white;
+  padding: 15px 30px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.sleep-numbers h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metric-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: #2b7eb9;
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.metric-label {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.metric-value {
+  font-weight: 700;
+  color: #2b7eb9;
+  font-size: 16px;
+  margin-left: auto;
+}
+
+.copyright {
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+  padding: 10px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .footer {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .sleep-numbers {
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .title {
+    font-size: 36px;
+  }
+
+  .sleep-schedule {
+    width: 100%;
+  }
+}
+
+/* Dark Mode Styles */
+.sleep-diary.dark-mode {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+.sleep-diary.dark-mode .title {
+  color: #9d8fc4;
+}
+
+.sleep-diary.dark-mode .subtitle {
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .sleep-schedule {
+  border-color: #5aa3d6;
+  background-color: #16213e;
+}
+
+.sleep-diary.dark-mode .schedule-label {
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .schedule-field label {
+  color: #e0e0e0;
+}
+
+.sleep-diary.dark-mode .schedule-field input[type="time"] {
+  background-color: #0f3460;
+  color: #e0e0e0;
+  border-color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .sleep-table {
+  border-color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .sleep-table th,
+.sleep-diary.dark-mode .sleep-table td {
+  border-color: #5aa3d6;
+  background-color: #16213e;
+  color: #e0e0e0;
+}
+
+.sleep-diary.dark-mode .sleep-table thead th {
+  background-color: #0f3460;
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .question-col {
+  background-color: #0f3460;
+}
+
+.sleep-diary.dark-mode .q-number {
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .q-text {
+  color: #e0e0e0;
+}
+
+.sleep-diary.dark-mode .sleep-table input[type="date"],
+.sleep-diary.dark-mode .sleep-table input[type="time"],
+.sleep-diary.dark-mode .sleep-table input[type="text"],
+.sleep-diary.dark-mode .sleep-table input[type="number"],
+.sleep-diary.dark-mode .sleep-table select {
+  background-color: #0f3460;
+  color: #e0e0e0;
+  border-color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .sleep-table textarea {
+  background-color: #0f3460;
+  color: #e0e0e0;
+  border-color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .radio-label {
+  color: #e0e0e0;
+}
+
+.sleep-diary.dark-mode .footer {
+  border-color: #5aa3d6;
+  background-color: #16213e;
+}
+
+.sleep-diary.dark-mode .calculations-box {
+  border-color: #5aa3d6;
+  background-color: #0f3460;
+}
+
+.sleep-diary.dark-mode .calc-content h3 {
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .calc-content p {
+  color: #e0e0e0;
+}
+
+.sleep-diary.dark-mode .calc-content a {
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .sleep-numbers {
+  background-color: #5aa3d6;
+  color: #1a1a2e;
+}
+
+.sleep-diary.dark-mode .metric-label {
+  color: #e0e0e0;
+}
+
+.sleep-diary.dark-mode .metric-value {
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .metric-number {
+  background-color: #5aa3d6;
+  color: #1a1a2e;
+}
+
+.sleep-diary.dark-mode .copyright {
+  color: #999;
+}
+
+.sleep-diary.dark-mode .dark-mode-toggle {
+  border-color: #5aa3d6;
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .dark-mode-toggle:hover {
+  background-color: #5aa3d6;
+  color: #1a1a2e;
+}
+
+/* Add styles for select elements */
+.sleep-table select {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.sleep-table input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* View Switcher */
+.view-switcher {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.view-btn {
+  padding: 12px 30px;
+  border: 2px solid #2b7eb9;
+  background-color: white;
+  color: #2b7eb9;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-btn:hover {
+  background-color: #f0f7fc;
+  transform: translateY(-2px);
+}
+
+.view-btn.active {
+  background-color: #2b7eb9;
+  color: white;
+}
+
+/* Day View */
+.day-view {
+  margin-bottom: 30px;
+}
+
+.day-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #2b7eb9;
+}
+
+.current-day {
+  color: #2b7eb9;
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.nav-btn {
+  padding: 10px 20px;
+  background-color: #2b7eb9;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+  background-color: #1f5f8b;
+  transform: scale(1.05);
+}
+
+.day-form {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-group {
+  margin-bottom: 25px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #2b7eb9;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.form-label .q-number {
+  display: inline-block;
+  color: #2b7eb9;
+  font-weight: 700;
+  font-size: 20px;
+  margin-right: 10px;
+}
+
+.form-label .q-text {
+  color: #333;
+  font-size: 16px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2b7eb9;
+}
+
+.form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #e9ecef;
+}
+
+.form-group .radio-group {
+  margin-top: 10px;
+}
+
+.form-group .radio-label {
+  font-size: 16px;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.form-group .radio-label:hover {
+  background-color: #e9ecef;
+}
+
+/* Dark mode for day view */
+.sleep-diary.dark-mode .view-btn {
+  background-color: #16213e;
+  color: #5aa3d6;
+  border-color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .view-btn.active {
+  background-color: #5aa3d6;
+  color: #1a1a2e;
+}
+
+.sleep-diary.dark-mode .day-navigation {
+  background-color: #16213e;
+  border-color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .current-day {
+  color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .nav-btn {
+  background-color: #5aa3d6;
+  color: #1a1a2e;
+}
+
+.sleep-diary.dark-mode .nav-btn:hover {
+  background-color: #7bb8e0;
+}
+
+.sleep-diary.dark-mode .form-group {
+  background-color: #16213e;
+  border-left-color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .form-label .q-text {
+  color: #e0e0e0;
+}
+
+.sleep-diary.dark-mode .form-input {
+  background-color: #0f3460;
+  color: #e0e0e0;
+  border-color: #5aa3d6;
+}
+
+.sleep-diary.dark-mode .form-input:disabled {
+  background-color: #0a2540;
+}
+
+.sleep-diary.dark-mode .form-group .radio-label:hover {
+  background-color: #0f3460;
+}
