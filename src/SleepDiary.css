@@ -1,5 +1,15 @@
 /* Modern Sleep Diary Styles - Cleaner Version */
 
+/* Global body styles */
+body {
+  transition: background-color 0.3s ease;
+  background-color: #f8fafc;
+}
+
+body.dark-mode {
+  background-color: #0f172a;
+}
+
 .sleep-diary {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -454,6 +464,72 @@
   margin-top: 8px;
 }
 
+/* Time Slider */
+.time-slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.time-display {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.time-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 10px;
+  background: linear-gradient(to right, #e2e8f0 0%, #cbd5e1 100%);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.time-slider:hover {
+  background: linear-gradient(to right, #cbd5e1 0%, #94a3b8 100%);
+}
+
+.time-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s ease;
+}
+
+.time-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.time-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s ease;
+}
+
+.time-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
 /* Button Groups */
 .button-group {
   display: flex;
@@ -854,6 +930,29 @@
 }
 
 .sleep-diary.dark-mode .dark-mode-toggle {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+}
+
+.sleep-diary.dark-mode .time-display {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sleep-diary.dark-mode .time-slider {
+  background: linear-gradient(to right, rgba(51, 65, 85, 0.5) 0%, rgba(71, 85, 105, 0.5) 100%);
+}
+
+.sleep-diary.dark-mode .time-slider:hover {
+  background: linear-gradient(to right, rgba(71, 85, 105, 0.5) 0%, rgba(100, 116, 139, 0.5) 100%);
+}
+
+.sleep-diary.dark-mode .time-slider::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+}
+
+.sleep-diary.dark-mode .time-slider::-moz-range-thumb {
   background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
 }
 
