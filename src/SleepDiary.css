@@ -605,14 +605,14 @@ body.dark-mode {
 }
 
 .toggle-btn.active.yes {
-  border-color: #10b981;
-  background: #10b981;
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
 .toggle-btn.active.no {
-  border-color: #ef4444;
-  background: #ef4444;
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
@@ -803,9 +803,19 @@ body.dark-mode {
 
 .sleep-diary.dark-mode .schedule-field input,
 .sleep-diary.dark-mode .form-input {
-  background: rgba(30, 41, 59, 0.5);
+  background: rgba(30, 41, 59, 0.8);
   color: #e2e8f0;
   border-color: rgba(129, 140, 248, 0.2);
+}
+
+.sleep-diary.dark-mode select.form-input {
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+}
+
+.sleep-diary.dark-mode select.form-input option {
+  background: #1e293b;
+  color: #e2e8f0;
 }
 
 .sleep-diary.dark-mode .view-switcher {
@@ -904,6 +914,18 @@ body.dark-mode {
   background: rgba(30, 41, 59, 0.4);
   border-color: rgba(129, 140, 248, 0.2);
   color: #cbd5e1;
+}
+
+.sleep-diary.dark-mode .toggle-btn.active.yes {
+  border-color: #818cf8;
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  color: white;
+}
+
+.sleep-diary.dark-mode .toggle-btn.active.no {
+  border-color: #818cf8;
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  color: white;
 }
 
 .sleep-diary.dark-mode .emoji-btn {

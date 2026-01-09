@@ -17,7 +17,7 @@ interface DayData {
   caffeineIntake: string
   caffeineTime: string
   screenUse: string
-  lastHourActivity: string
+  lastHourActivity: string[]
   stressLevel: string
   notes: string
 }
@@ -124,7 +124,7 @@ function SleepDiary() {
       caffeineIntake: "",
       caffeineTime: "",
       screenUse: "",
-      lastHourActivity: "",
+      lastHourActivity: [],
       stressLevel: "",
       notes: "",
     }))
@@ -624,10 +624,14 @@ function SleepDiary() {
                   {["5 min", "15 min", "30 min", "45 min", "60+ min"].map((time) => (
                     <button
                       key={time}
+                      type="button"
                       className={`choice-btn ${
                         weekData[selectedDayIndex].timeToFallAsleep === time ? "active" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "timeToFallAsleep", time)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "timeToFallAsleep", time)
+                      }}
                     >
                       {time}
                     </button>
@@ -680,82 +684,86 @@ function SleepDiary() {
                   <label>Sweets/Sugar (3hrs before bed)</label>
                   <div className="toggle-buttons">
                     <button
+                      type="button"
                       className={`toggle-btn ${
                         weekData[selectedDayIndex].sweetIntake === "Yes" ? "active yes" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "sweetIntake", "Yes")}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "sweetIntake", "Yes")
+                      }}
                     >
                       Yes
                     </button>
                     <button
+                      type="button"
                       className={`toggle-btn ${
                         weekData[selectedDayIndex].sweetIntake === "No" ? "active no" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "sweetIntake", "No")}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "sweetIntake", "No")
+                      }}
                     >
                       No
                     </button>
                   </div>
-                  {weekData[selectedDayIndex].sweetIntake === "Yes" && (
-                    <input
-                      type="time"
-                      value={weekData[selectedDayIndex].sweetTime}
-                      onChange={(e) => updateDayData(selectedDayIndex, "sweetTime", e.target.value)}
-                      className="form-input mt-2"
-                      placeholder="What time?"
-                    />
-                  )}
                 </div>
 
                 <div className="toggle-item">
-                  <label>Caffeine</label>
+                  <label>Caffeine after 14:00</label>
                   <div className="toggle-buttons">
                     <button
+                      type="button"
                       className={`toggle-btn ${
                         weekData[selectedDayIndex].caffeineIntake === "Yes" ? "active yes" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "caffeineIntake", "Yes")}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "caffeineIntake", "Yes")
+                      }}
                     >
                       Yes
                     </button>
                     <button
+                      type="button"
                       className={`toggle-btn ${
                         weekData[selectedDayIndex].caffeineIntake === "No" ? "active no" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "caffeineIntake", "No")}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "caffeineIntake", "No")
+                      }}
                     >
                       No
                     </button>
                   </div>
-                  {weekData[selectedDayIndex].caffeineIntake === "Yes" && (
-                    <input
-                      type="time"
-                      value={weekData[selectedDayIndex].caffeineTime}
-                      onChange={(e) =>
-                        updateDayData(selectedDayIndex, "caffeineTime", e.target.value)
-                      }
-                      className="form-input mt-2"
-                      placeholder="Last consumption"
-                    />
-                  )}
                 </div>
 
                 <div className="toggle-item">
                   <label>Screen time (2hrs before bed)</label>
                   <div className="toggle-buttons">
                     <button
+                      type="button"
                       className={`toggle-btn ${
                         weekData[selectedDayIndex].screenUse === "Yes" ? "active yes" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "screenUse", "Yes")}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "screenUse", "Yes")
+                      }}
                     >
                       Yes
                     </button>
                     <button
+                      type="button"
                       className={`toggle-btn ${
                         weekData[selectedDayIndex].screenUse === "No" ? "active no" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "screenUse", "No")}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "screenUse", "No")
+                      }}
                     >
                       No
                     </button>
@@ -764,27 +772,28 @@ function SleepDiary() {
               </div>
 
               <div className="input-group">
-                <label>Last hour activity before sleep</label>
+                <label>Last hour activity before sleep (select all that apply)</label>
                 <div className="button-group-wrap">
                   {ACTIVITY_OPTIONS.map((activity) => (
                     <button
                       key={activity}
+                      type="button"
                       className={`choice-btn ${
-                        weekData[selectedDayIndex].lastHourActivity === activity ? "active" : ""
+                        weekData[selectedDayIndex].lastHourActivity.includes(activity) ? "active" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "lastHourActivity", activity)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const currentActivities = weekData[selectedDayIndex].lastHourActivity
+                        const newActivities = currentActivities.includes(activity)
+                          ? currentActivities.filter((a) => a !== activity)
+                          : [...currentActivities, activity]
+                        updateDayData(selectedDayIndex, "lastHourActivity", newActivities)
+                      }}
                     >
                       {activity}
                     </button>
                   ))}
                 </div>
-                {weekData[selectedDayIndex].lastHourActivity === "Other" && (
-                  <input
-                    type="text"
-                    className="form-input mt-2"
-                    placeholder="Specify activity..."
-                  />
-                )}
               </div>
             </div>
 
@@ -803,10 +812,14 @@ function SleepDiary() {
                   ].map(({ value, emoji, label }) => (
                     <button
                       key={value}
+                      type="button"
                       className={`emoji-btn ${
                         weekData[selectedDayIndex].stressLevel === value ? "active" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "stressLevel", value)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "stressLevel", value)
+                      }}
                       title={label}
                     >
                       <span className="emoji">{emoji}</span>
@@ -828,10 +841,14 @@ function SleepDiary() {
                   ].map(({ value, emoji, label }) => (
                     <button
                       key={value}
+                      type="button"
                       className={`emoji-btn ${
                         weekData[selectedDayIndex].sleepQuality === value ? "active" : ""
                       }`}
-                      onClick={() => updateDayData(selectedDayIndex, "sleepQuality", value)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        updateDayData(selectedDayIndex, "sleepQuality", value)
+                      }}
                       title={label}
                     >
                       <span className="emoji">{emoji}</span>
