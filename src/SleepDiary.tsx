@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './SleepDiary.css'
 
 interface DayData {
@@ -35,12 +35,53 @@ const ACTIVITY_OPTIONS = [
   'Other'
 ]
 
+// Get week number (ISO 8601)
+const getWeekNumber = (date: Date): number => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+}
+
+// Get dates for a specific week (Monday to Sunday)
+// weekOffset: 0 = current week, -1 = last week, 1 = next week
+const getWeekDates = (weekOffset: number = 0): string[] => {
+  const today = new Date()
+  const currentDay = today.getDay()
+  const diff = currentDay === 0 ? -6 : 1 - currentDay // Adjust to Monday
+
+  const monday = new Date(today)
+  monday.setDate(today.getDate() + diff + (weekOffset * 7))
+
+  return DAYS.map((_, index) => {
+    const date = new Date(monday)
+    date.setDate(monday.getDate() + index)
+    return date.toISOString().split('T')[0]
+  })
+}
+
+// Format date range for display (e.g., "Jan 8 - Jan 14")
+const formatDateRange = (dates: string[]): string => {
+  if (dates.length === 0 || !dates[0]) return ''
+
+  const firstDate = new Date(dates[0])
+  const lastDate = new Date(dates[dates.length - 1])
+
+  const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+  const firstFormatted = firstDate.toLocaleDateString('en-US', options)
+  const lastFormatted = lastDate.toLocaleDateString('en-US', options)
+
+  return `${firstFormatted} - ${lastFormatted}`
+}
+
 function SleepDiary() {
   const [bedtime, setBedtime] = useState('')
   const [riseTime, setRiseTime] = useState('')
   const [darkMode, setDarkMode] = useState(false)
   const [viewMode, setViewMode] = useState<'week' | 'day' | 'analytics'>('week')
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
+  const [weekOffset, setWeekOffset] = useState(0) // 0 = current week, -1 = last week, 1 = next week
 
   const [weekData, setWeekData] = useState<DayData[]>(
     DAYS.map(day => ({
@@ -64,6 +105,17 @@ function SleepDiary() {
       notes: ''
     }))
   )
+
+  // Auto-populate dates based on week offset
+  useEffect(() => {
+    const weekDates = getWeekDates(weekOffset)
+    setWeekData(prevData =>
+      prevData.map((day, index) => ({
+        ...day,
+        date: weekDates[index]
+      }))
+    )
+  }, [weekOffset])
 
   const updateDayData = (index: number, field: keyof DayData, value: string) => {
     const newData = [...weekData]
@@ -285,6 +337,40 @@ function SleepDiary() {
 
       {viewMode === 'week' && (
         <div className="week-overview">
+          <div className="week-header">
+            <div className="week-navigation">
+              <button
+                className="week-nav-btn"
+                onClick={() => setWeekOffset(weekOffset - 1)}
+                title="Previous week"
+              >
+                ← Previous
+              </button>
+              <div className="week-info">
+                <h2 className="week-title">
+                  Week {weekData[0]?.date ? getWeekNumber(new Date(weekData[0].date)) : ''}
+                </h2>
+                <p className="week-date-range">
+                  {formatDateRange(weekData.map(d => d.date))}
+                </p>
+              </div>
+              <button
+                className="week-nav-btn"
+                onClick={() => setWeekOffset(weekOffset + 1)}
+                title="Next week"
+              >
+                Next →
+              </button>
+            </div>
+            {weekOffset !== 0 && (
+              <button
+                className="today-btn"
+                onClick={() => setWeekOffset(0)}
+              >
+                ← Back to This Week
+              </button>
+            )}
+          </div>
           <div className="week-grid">
             {weekData.map((day, index) => {
               const completion = getDayCompletion(day)
@@ -351,17 +437,6 @@ function SleepDiary() {
           </div>
 
           <div className="day-form">
-            {/* Date */}
-            <div className="form-section">
-              <h3 className="section-title">📅 Date</h3>
-              <input
-                type="date"
-                value={weekData[selectedDayIndex].date}
-                onChange={(e) => updateDayData(selectedDayIndex, 'date', e.target.value)}
-                className="form-input"
-              />
-            </div>
-
             {/* Sleep Times */}
             <div className="form-section">
               <h3 className="section-title">🛏️ Sleep Times</h3>

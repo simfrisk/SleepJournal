@@ -160,6 +160,84 @@
   margin-bottom: 40px;
 }
 
+.week-header {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-radius: 16px;
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.week-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.week-info {
+  text-align: center;
+  flex: 1;
+}
+
+.week-title {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 8px 0;
+}
+
+.week-date-range {
+  font-size: 16px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0;
+}
+
+.week-nav-btn {
+  padding: 10px 20px;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.week-nav-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: scale(1.05);
+}
+
+.today-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.today-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
 .week-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -663,6 +741,37 @@
   color: #818cf8;
 }
 
+.sleep-diary.dark-mode .week-header {
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.05) 0%, rgba(167, 139, 250, 0.05) 100%);
+  border-color: rgba(129, 140, 248, 0.15);
+}
+
+.sleep-diary.dark-mode .week-title {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sleep-diary.dark-mode .week-date-range {
+  color: #94a3b8;
+}
+
+.sleep-diary.dark-mode .week-nav-btn {
+  background: rgba(30, 41, 59, 0.6);
+  color: #818cf8;
+  border-color: #818cf8;
+}
+
+.sleep-diary.dark-mode .week-nav-btn:hover {
+  background: #818cf8;
+  color: white;
+}
+
+.sleep-diary.dark-mode .today-btn {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+}
+
 .sleep-diary.dark-mode .day-card {
   background: rgba(30, 41, 59, 0.4);
   border-color: rgba(51, 65, 85, 0.5);
@@ -985,6 +1094,33 @@
   }
 
   /* Week Overview */
+  .week-header {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .week-navigation {
+    gap: 12px;
+  }
+
+  .week-title {
+    font-size: 26px;
+  }
+
+  .week-date-range {
+    font-size: 14px;
+  }
+
+  .week-nav-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .today-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
   .week-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
@@ -1192,6 +1328,39 @@
   .view-btn {
     padding: 8px 12px;
     font-size: 12px;
+  }
+
+  .week-header {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .week-navigation {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .week-info {
+    order: -1;
+  }
+
+  .week-title {
+    font-size: 22px;
+  }
+
+  .week-date-range {
+    font-size: 13px;
+  }
+
+  .week-nav-btn {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .today-btn {
+    padding: 10px 16px;
+    font-size: 13px;
   }
 
   .week-grid {
