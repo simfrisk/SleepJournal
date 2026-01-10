@@ -188,7 +188,7 @@ function SleepDiary() {
     return dayNum === 0 ? 6 : dayNum - 1
   }
 
-  const updateDayData = (index: number, field: keyof DayData, value: string) => {
+  const updateDayData = (index: number, field: keyof DayData, value: string | string[]) => {
     const newData = [...weekData]
     newData[index] = { ...newData[index], [field]: value }
     setWeekData(newData)
