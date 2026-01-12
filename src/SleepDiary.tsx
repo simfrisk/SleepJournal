@@ -1,4 +1,9 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "./hooks/useAuth"
+import { useSettings } from "./hooks/useSettings"
+import { useSleepData } from "./hooks/useSleepData"
+import { DataMigration } from "./components/DataMigration"
 import "./SleepDiary.css"
 
 interface DayData {
@@ -76,38 +81,46 @@ const formatDateRange = (dates: string[]): string => {
 }
 
 function SleepDiary() {
-  const [bedtime, setBedtime] = useState(() => {
-    const saved = localStorage.getItem("sleepDiaryBedtime")
-    return saved || ""
-  })
-  const [riseTime, setRiseTime] = useState(() => {
-    const saved = localStorage.getItem("sleepDiaryRiseTime")
-    return saved || ""
-  })
-  const [darkMode, setDarkMode] = useState(() => {
-    // Load theme from localStorage on initial mount
-    const savedTheme = localStorage.getItem("sleepDiaryTheme")
-    return savedTheme === "dark"
-  })
-  const [viewMode, setViewMode] = useState<"week" | "day" | "analytics">(() => {
-    const saved = localStorage.getItem("sleepDiaryViewMode")
-    return (saved as "week" | "day" | "analytics") || "week"
-  })
-  const [selectedDayIndex, setSelectedDayIndex] = useState(() => {
-    const saved = localStorage.getItem("sleepDiarySelectedDay")
-    return saved ? parseInt(saved) : 0
-  })
+  // Auth and API hooks
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const { settings, updateSettings } = useSettings()
+
+  // Migration state
+  const [showMigration, setShowMigration] = useState(true)
+  const [migrationComplete, setMigrationComplete] = useState(false)
+
+  // Local state for week navigation
   const [weekOffset, setWeekOffset] = useState(0) // 0 = current week, -1 = last week, 1 = next week
 
+  // Calculate current week year and number
+  const getCurrentWeekInfo = useCallback(() => {
+    const today = new Date()
+    const offsetDate = new Date(today)
+    offsetDate.setDate(today.getDate() + weekOffset * 7)
+
+    const year = offsetDate.getFullYear()
+    const weekNumber = getWeekNumber(offsetDate)
+
+    return { year, weekNumber }
+  }, [weekOffset])
+
+  const { year, weekNumber } = getCurrentWeekInfo()
+
+  // Fetch sleep data for current week
+  const { weekData: apiWeekData, loading, saving, saveWeekData } = useSleepData(year, weekNumber)
+
+  // Local state derived from settings
+  const [bedtime, setBedtime] = useState(settings.targetSchedule.bedTime)
+  const [riseTime, setRiseTime] = useState(settings.targetSchedule.riseTime)
+  const [darkMode, setDarkMode] = useState(settings.theme === "dark")
+  const [viewMode, setViewMode] = useState<"week" | "day" | "analytics">(
+    settings.viewMode as "week" | "day" | "analytics"
+  )
+  const [selectedDayIndex, setSelectedDayIndex] = useState(settings.selectedDay)
+
+  // Local state for week data
   const [weekData, setWeekData] = useState<DayData[]>(() => {
-    const saved = localStorage.getItem("sleepDiaryWeekData")
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        console.error("Failed to parse saved week data:", e)
-      }
-    }
     return DAYS.map((day) => ({
       dayOfWeek: day,
       date: "",
@@ -130,6 +143,47 @@ function SleepDiary() {
     }))
   })
 
+  // Sync local state with settings when they load
+  useEffect(() => {
+    setBedtime(settings.targetSchedule.bedTime)
+    setRiseTime(settings.targetSchedule.riseTime)
+    setDarkMode(settings.theme === "dark")
+    setViewMode(settings.viewMode as "week" | "day" | "analytics")
+    setSelectedDayIndex(settings.selectedDay)
+  }, [settings])
+
+  // Load API week data into local state
+  useEffect(() => {
+    if (apiWeekData && apiWeekData.length > 0) {
+      setWeekData(apiWeekData)
+    } else {
+      // Initialize empty week with dates
+      const weekDates = getWeekDates(weekOffset)
+      setWeekData(
+        DAYS.map((day, index) => ({
+          dayOfWeek: day,
+          date: weekDates[index],
+          bedTime: "",
+          sleepAttemptTime: "",
+          timeToFallAsleep: "",
+          nightAwakenings: "",
+          awakeningDuration: "",
+          finalAwakening: "",
+          outOfBed: "",
+          sleepQuality: "",
+          sweetIntake: "",
+          sweetTime: "",
+          caffeineIntake: "",
+          caffeineTime: "",
+          screenUse: "",
+          lastHourActivity: [],
+          stressLevel: "",
+          notes: "",
+        }))
+      )
+    }
+  }, [apiWeekData, weekOffset])
+
   // Auto-populate dates based on week offset
   useEffect(() => {
     const weekDates = getWeekDates(weekOffset)
@@ -141,11 +195,6 @@ function SleepDiary() {
     )
   }, [weekOffset])
 
-  // Save theme to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("sleepDiaryTheme", darkMode ? "dark" : "light")
-  }, [darkMode])
-
   // Apply theme to document body
   useEffect(() => {
     if (darkMode) {
@@ -155,30 +204,68 @@ function SleepDiary() {
     }
   }, [darkMode])
 
-  // Save bedtime to localStorage
+  // Debounced auto-save for week data (500ms delay)
   useEffect(() => {
-    localStorage.setItem("sleepDiaryBedtime", bedtime)
-  }, [bedtime])
+    const timer = setTimeout(() => {
+      if (weekData && weekData.length > 0 && weekData[0].date) {
+        const weekStartDate = weekData[0].date
+        saveWeekData(weekData, weekStartDate).catch((error) => {
+          console.error("Failed to save week data:", error)
+        })
+      }
+    }, 500)
 
-  // Save rise time to localStorage
-  useEffect(() => {
-    localStorage.setItem("sleepDiaryRiseTime", riseTime)
-  }, [riseTime])
+    return () => clearTimeout(timer)
+  }, [weekData, saveWeekData])
 
-  // Save week data to localStorage
+  // Update settings when they change
   useEffect(() => {
-    localStorage.setItem("sleepDiaryWeekData", JSON.stringify(weekData))
-  }, [weekData])
+    const timer = setTimeout(() => {
+      updateSettings({
+        theme: darkMode ? "dark" : "light",
+      }).catch((error) => {
+        console.error("Failed to update theme:", error)
+      })
+    }, 300)
 
-  // Save selected day index to localStorage
-  useEffect(() => {
-    localStorage.setItem("sleepDiarySelectedDay", selectedDayIndex.toString())
-  }, [selectedDayIndex])
+    return () => clearTimeout(timer)
+  }, [darkMode, updateSettings])
 
-  // Save view mode to localStorage
   useEffect(() => {
-    localStorage.setItem("sleepDiaryViewMode", viewMode)
-  }, [viewMode])
+    const timer = setTimeout(() => {
+      updateSettings({
+        viewMode: viewMode,
+      }).catch((error) => {
+        console.error("Failed to update view mode:", error)
+      })
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [viewMode, updateSettings])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateSettings({
+        selectedDay: selectedDayIndex,
+      }).catch((error) => {
+        console.error("Failed to update selected day:", error)
+      })
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [selectedDayIndex, updateSettings])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateSettings({
+        targetSchedule: { bedTime: bedtime, riseTime: riseTime },
+      }).catch((error) => {
+        console.error("Failed to update target schedule:", error)
+      })
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [bedtime, riseTime, updateSettings])
 
   // Get current day index (0 = Monday, 6 = Sunday)
   const getCurrentDayIndex = (): number => {
@@ -394,14 +481,65 @@ function SleepDiary() {
   const metrics = calculateSleepMetrics()
   const analytics = calculateAnalytics()
 
+  if (loading) {
+    return (
+      <div className={`sleep-diary ${darkMode ? "dark-mode" : ""}`}>
+        <div className="header">
+          <h1 className="title">Loading...</h1>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className={`sleep-diary ${darkMode ? "dark-mode" : ""}`}>
-      <button
-        className="dark-mode-toggle"
-        onClick={() => setDarkMode(!darkMode)}
-      >
-        {darkMode ? "☀️" : "🌙"}
-      </button>
+    <>
+      {showMigration && !migrationComplete && (
+        <DataMigration
+          onComplete={() => {
+            setMigrationComplete(true)
+            setShowMigration(false)
+          }}
+        />
+      )}
+
+      <div className={`sleep-diary ${darkMode ? "dark-mode" : ""}`}>
+        <button
+          className="dark-mode-toggle"
+          onClick={() => setDarkMode(!darkMode)}
+        >
+          {darkMode ? "☀️" : "🌙"}
+        </button>
+
+        <div className="user-info-bar" style={{
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "center",
+        padding: "8px 16px",
+        background: darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)",
+        borderBottom: "1px solid",
+        borderColor: darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+        fontSize: "14px",
+        gap: "16px"
+      }}>
+        <span>{user?.email}</span>
+        <button
+          onClick={async () => {
+            await logout()
+            navigate('/')
+          }}
+          style={{
+            padding: "4px 12px",
+            background: darkMode ? "#444" : "#ddd",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px"
+          }}
+        >
+          Logout
+        </button>
+        {saving && <span style={{ color: "#666", fontSize: "12px" }}>Saving...</span>}
+      </div>
 
       <div className="header">
         <div className="title-section">
@@ -1154,6 +1292,7 @@ function SleepDiary() {
 
       <div className="copyright">© 2024 Sleep Diary - Track, analyze, and improve your sleep</div>
     </div>
+    </>
   )
 }
 
