@@ -503,43 +503,29 @@ function SleepDiary() {
       )}
 
       <div className={`sleep-diary ${darkMode ? "dark-mode" : ""}`}>
-        <button
-          className="dark-mode-toggle"
-          onClick={() => setDarkMode(!darkMode)}
-        >
-          {darkMode ? "☀️" : "🌙"}
-        </button>
-
-        <div className="user-info-bar" style={{
-        display: "flex",
-        justifyContent: "flex-end",
-        alignItems: "center",
-        padding: "8px 16px",
-        background: darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)",
-        borderBottom: "1px solid",
-        borderColor: darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-        fontSize: "14px",
-        gap: "16px"
-      }}>
-        <span>{user?.email}</span>
-        <button
-          onClick={async () => {
-            await logout()
-            navigate('/')
-          }}
-          style={{
-            padding: "4px 12px",
-            background: darkMode ? "#444" : "#ddd",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontSize: "14px"
-          }}
-        >
-          Logout
-        </button>
-        {saving && <span style={{ color: "#666", fontSize: "12px" }}>Saving...</span>}
-      </div>
+        <div className={`user-info-bar ${darkMode ? "dark-mode" : ""}`}>
+          <div className="user-info-content">
+            <span className="user-email">{user?.email}</span>
+            {saving && <span className="saving-indicator">Saving...</span>}
+          </div>
+          <div className="user-actions">
+            <button
+              className="dark-mode-toggle"
+              onClick={() => setDarkMode(!darkMode)}
+            >
+              {darkMode ? "☀️" : "🌙"}
+            </button>
+            <button
+              className="logout-button"
+              onClick={async () => {
+                await logout()
+                navigate('/')
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </div>
 
       <div className="header">
         <div className="title-section">
@@ -569,15 +555,16 @@ function SleepDiary() {
         </div>
       </div>
 
-      <div className="view-switcher">
+      {/* Desktop Navigation */}
+      <div className="desktop-nav">
         <button
-          className={`view-btn ${viewMode === "week" ? "active" : ""}`}
+          className={`desktop-nav-btn ${viewMode === "week" ? "active" : ""}`}
           onClick={() => setViewMode("week")}
         >
           Week Overview
         </button>
         <button
-          className={`view-btn ${viewMode === "day" ? "active" : ""}`}
+          className={`desktop-nav-btn ${viewMode === "day" ? "active" : ""}`}
           onClick={() => {
             setSelectedDayIndex(getCurrentDayIndex())
             setViewMode("day")
@@ -586,7 +573,7 @@ function SleepDiary() {
           Daily Entry
         </button>
         <button
-          className={`view-btn ${viewMode === "analytics" ? "active" : ""}`}
+          className={`desktop-nav-btn ${viewMode === "analytics" ? "active" : ""}`}
           onClick={() => setViewMode("analytics")}
         >
           Analytics
@@ -1291,6 +1278,31 @@ function SleepDiary() {
       </div>
 
       <div className="copyright">© 2024 Sleep Diary - Track, analyze, and improve your sleep</div>
+    </div>
+
+    {/* Mobile Bottom Navigation */}
+    <div className={`bottom-nav ${darkMode ? "dark-mode" : ""}`}>
+      <button
+        className={`bottom-nav-btn ${viewMode === "week" ? "active" : ""}`}
+        onClick={() => setViewMode("week")}
+      >
+        Week
+      </button>
+      <button
+        className={`bottom-nav-btn ${viewMode === "day" ? "active" : ""}`}
+        onClick={() => {
+          setSelectedDayIndex(getCurrentDayIndex())
+          setViewMode("day")
+        }}
+      >
+        Daily
+      </button>
+      <button
+        className={`bottom-nav-btn ${viewMode === "analytics" ? "active" : ""}`}
+        onClick={() => setViewMode("analytics")}
+      >
+        Analytics
+      </button>
     </div>
     </>
   )
