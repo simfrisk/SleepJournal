@@ -23,18 +23,8 @@ export function Signup() {
     }
 
     // Validate password strength
-    if (password.length < 8) {
-      setValidationError('Password must be at least 8 characters long');
-      return;
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      setValidationError('Password must contain at least one uppercase letter');
-      return;
-    }
-
-    if (!/[0-9]/.test(password)) {
-      setValidationError('Password must contain at least one number');
+    if (password.length < 4) {
+      setValidationError('Password must be at least 4 characters long');
       return;
     }
 
@@ -96,7 +86,7 @@ export function Signup() {
               disabled={loading}
             />
             <p className="auth-hint">
-              At least 8 characters with 1 uppercase letter and 1 number
+              At least 4 characters
             </p>
           </div>
 
